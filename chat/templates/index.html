@@ -1,25 +1,104 @@
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Chat Room</title>
-    </head>
-    <body>
-        What chat room would you like to enter?<br>
-        <input type="text" id="room-name-input" size="100"><br>
-        <input type="text" id="room-name-submit" value="Enter"><br>
+{% extends "base.html" %}
+{% block title %}Lobby — ChatApp{% endblock %}
 
-        <script>
-            document.querySelector('#room-name-input').focus();
-            document.querySelector('#room-name-input').onkeyup = function(e){
-                if (e.keycode === 13){
-                    document.querySelector('#room-name-submit').click();
-                }
-            };
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-10 w-full">
 
-            document.querySelector('#room-name-submit').onclick = function(e){
-                var roomName = document.querySelector('#room-name-input').value;
-                window.location.pathname = '/chat/' + roomName + '/';
-            };
-        </script>
-    </body>
-</html>
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-1">Chat Lobby</h1>
+        <p class="text-gray-400">Welcome back, <span class="text-green-400 font-medium">{{ user.username }}</span></p>
+    </div>
+
+    <!-- Create / Join room -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-8">
+        <h2 class="text-lg font-semibold text-white mb-4">Join or Create a Room</h2>
+        <div class="flex gap-3 mb-3">
+            <input
+                type="text"
+                id="room-name-input"
+                placeholder="Room name e.g. general, random"
+                class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors"
+            >
+            <button
+                id="room-name-submit"
+                class="bg-green-600 hover:bg-green-500 active:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors whitespace-nowrap"
+            >
+                Enter Room →
+            </button>
+        </div>
+        <input
+            type="text"
+            id="room-description-input"
+            placeholder="Room description (optional)"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors text-sm"
+        >
+        <p class="text-gray-600 text-xs mt-2">If the room doesn't exist it will be created automatically.</p>
+    </div>
+
+    <!-- Existing rooms -->
+    <div>
+        <h2 class="text-lg font-semibold text-white mb-4">
+            Active Rooms
+            <span class="text-sm font-normal text-gray-500 ml-2">{{ rooms.count }} room{{ rooms.count|pluralize }}</span>
+        </h2>
+
+        {% if rooms %}
+            <div class="grid gap-3">
+                {% for room in rooms %}
+                    <a href="/chat/{{ room.name }}/"
+                       class="bg-gray-900 border border-gray-800 hover:border-green-600 rounded-2xl px-6 py-4 flex items-center justify-between group transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-gray-800 group-hover:bg-green-900/40 flex items-center justify-center text-xl transition-colors shrink-0">
+                                💬
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white group-hover:text-green-400 transition-colors"># {{ room.name }}</p>
+                                {% if room.description %}
+                                    <p class="text-xs text-gray-400 mt-0.5">{{ room.description }}</p>
+                                {% else %}
+                                    <p class="text-xs text-gray-600 mt-0.5 italic">No description</p>
+                                {% endif %}
+                                <p class="text-xs text-gray-600 mt-0.5">
+                                    Created {{ room.created_at|date:"N j, Y" }}
+                                    {% if room.created_by %} by {{ room.created_by.username }}{% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 text-right shrink-0">
+                            <div>
+                                <p class="text-sm font-medium text-gray-300">{{ room.messages.count }}</p>
+                                <p class="text-xs text-gray-500">messages</p>
+                            </div>
+                            <span class="text-gray-600 group-hover:text-green-500 text-xl transition-colors">→</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-gray-900 border border-dashed border-gray-700 rounded-2xl p-10 text-center">
+                <p class="text-4xl mb-3">🏜️</p>
+                <p class="text-gray-400 font-medium">No rooms yet</p>
+                <p class="text-gray-600 text-sm mt-1">Create one above to get the conversation started.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    document.querySelector('#room-name-input').focus();
+
+    document.querySelector('#room-name-input').onkeyup = function(e) {
+        if (e.keyCode === 13) document.querySelector('#room-name-submit').click();
+    };
+
+    document.querySelector('#room-name-submit').onclick = function() {
+        const name = document.querySelector('#room-name-input').value.trim();
+        const desc = document.querySelector('#room-description-input').value.trim();
+        if (!name) return;
+        // Store description in sessionStorage so room view can pick it up
+        if (desc) sessionStorage.setItem('pending_desc_' + name, desc);
+        window.location.pathname = '/chat/' + name.toLowerCase().replace(/\s+/g, '-') + '/';
+    };
+</script>
+{% endblock %}

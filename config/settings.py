@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# ── Custom User Model ──
+AUTH_USER_MODEL = 'accounts.User'
 
 # Application definition
 
@@ -37,9 +40,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'channels',
+    # 'channels',
     'chat',
+    'accounts',
 ]
+
+# ── Auth redirects ───
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/chat/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -56,7 +65,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -120,20 +129,24 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CHANNEL_LAYERS = {
-    "default":
-    {
-        "BACKEND":"channels_redis.core.RedisChannelLayer",
-        "CONFIG" : {
-            "hosts" : [("127.0.0.1", 6379)]
-        }
-    }
-}
+# CHANNEL_LAYERS = {
+#     "default":
+#     {
+#         "BACKEND":"channels_redis.core.RedisChannelLayer",
+#         "CONFIG" : {
+#             "hosts" : [("127.0.0.1", 6379)]
+#         }
+#     }
+# }
 
 CHANNEL_LAYERS = {
     "default" : {
