@@ -2,7 +2,7 @@
 buildCommand = "chmod +x build.sh && ./build.sh"
 
 [deploy]
-startCommand = "daphne -b 0.0.0.0 -p $PORT config.asgi:application"
+startCommand = "python manage.py migrate && daphne -b 0.0.0.0 -p $PORT config.asgi:application"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
