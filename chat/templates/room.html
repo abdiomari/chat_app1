@@ -4,8 +4,24 @@
 {% block content %}
 <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 57px);">
 
+    <!-- Mobile overlay -->
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/60 z-30 md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Mobile top bar -->
+    <div class="md:hidden fixed top-0 left-0 right-0 z-20 bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center gap-3" style="margin-top:57px;">
+        <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white transition-colors p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+        <span class="text-white font-semibold"># {{ room_name }}</span>
+        <span class="text-green-500 text-xs ml-auto flex items-center gap-1">
+            ● <span id="mobile-online-count">0</span> online
+        </span>
+    </div>
+
     <!-- Sidebar -->
-    <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:w-64">
 
         <!-- Room info -->
         <div class="p-4 border-b border-gray-800">
@@ -86,13 +102,13 @@
     <div class="flex-1 flex flex-col overflow-hidden">
 
         <!-- Messages -->
-        <div id="chat-log" class="flex-1 overflow-y-auto p-6 space-y-4">
+        <div id="chat-log" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 pt-16 md:pt-6">
             {% if messages %}
                 {% for message in messages %}
                     {% if message.user.username == user.username %}
                     <!-- Own message -->
                     <div class="flex justify-end gap-3 group" data-message-id="{{ message.id }}">
-                        <div class="max-w-lg">
+                        <div class="max-w-xs md:max-w-lg">
                             <p class="text-xs text-gray-500 text-right mb-1">
                                 {{ message.timestamp|date:"N j" }} {{ message.timestamp|time:"H:i" }}
                                 {% if message.edited %}<span class="italic">(edited)</span>{% endif %}
@@ -145,7 +161,7 @@
                                 {{ message.user.username|default:"A"|first|upper }}
                             {% endif %}
                         </div>
-                        <div class="max-w-lg">
+                        <div class="max-w-xs md:max-w-lg">
                             <p class="text-xs text-gray-500 mb-1">
                                 <span class="text-gray-300 font-medium">{{ message.user|default:"Anonymous" }}</span>
                                 · {{ message.timestamp|date:"N j" }} {{ message.timestamp|time:"H:i" }}
@@ -258,11 +274,33 @@ function escapeHtml(text) {
                .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
 
+// ── Mobile sidebar toggle ─────────────────────────────────────
+function toggleSidebar() {
+    const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('sidebar-overlay');
+    const isOpen   = !sidebar.classList.contains('-translate-x-full');
+
+    if (isOpen) {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    } else {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+    }
+}
+
+// Close sidebar on room name click (mobile convenience)
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    }
+});
+
 // ── WebSocket ─────────────────────────────────────────────────
-const chatSocket = new WebSocket(
-    (window.location.protocol === 'https:' ? 'wss://' : 'ws://')
-    + window.location.host + '/ws/chat/' + roomName + '/'
-);
+const chatSocket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/' + roomName + '/');
 
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
@@ -304,7 +342,7 @@ function appendMessage(username, message, messageId, date) {
         wrapper.className = 'flex justify-end gap-3 group';
         wrapper.setAttribute('data-message-id', messageId || '');
         wrapper.innerHTML = `
-            <div class="max-w-lg">
+            <div class="max-w-xs md:max-w-lg">
                 <p class="text-xs text-gray-500 text-right mb-1">
                     ${dateStr} ${time}
                     <span class="hidden group-hover:inline-flex gap-2 ml-2">
@@ -334,7 +372,7 @@ function appendMessage(username, message, messageId, date) {
             <div class="w-8 h-8 rounded-full ${colour} flex items-center justify-center font-bold text-white text-xs shrink-0 mt-5 overflow-hidden" style="min-width:2rem;min-height:2rem;">
                 ${initial}
             </div>
-            <div class="max-w-lg">
+            <div class="max-w-xs md:max-w-lg">
                 <p class="text-xs text-gray-500 mb-1">
                     <span class="text-gray-300 font-medium">${escapeHtml(username)}</span> · ${dateStr} ${time}
                 </p>
@@ -351,6 +389,8 @@ function appendMessage(username, message, messageId, date) {
 // ── Online users ──────────────────────────────────────────────
 function updateUserList(users) {
     document.getElementById('online-count').textContent = users.length;
+    const mobileCount = document.getElementById('mobile-online-count');
+    if (mobileCount) mobileCount.textContent = users.length;
     const list = document.getElementById('online-users-list');
     list.innerHTML = '';
     users.forEach(username => {
